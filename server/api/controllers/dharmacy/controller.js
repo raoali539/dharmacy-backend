@@ -1,56 +1,150 @@
-import ExamplesService from '../../services/examples.service';
-import User from '../../models/User';
+import {
+  createAccount,
+  authenticateOTP,
+  authenticateForLogin,
+  resendOtpHandler,
+  sellProductHandler,
+  productByCategoryHandler,
+  getAllProductsHandler,
+  getAllProductsByIdHandler,
+  createAccountWithGoogle,
+  createOrder,
+} from "../../services";
 export class Controller {
 
- // Register
- async register(req, res) {
-  const { name, email, password, role } = req.body;
+  async register(req, res) {
+    const { userName, contactNumber, email, password, sub } = req.body;
 
-  if (!name || !email || !password || !role) {
-    return res.status(400).json({ message: 'All fields are required.' });
+    try {
+      if (!userName || !contactNumber || !email || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      const result = await createAccount(req.body, res);
+
+      if (result.success === false) {
+        return res.status(400).json({ message: result.message });
+      } else {
+        return res
+          .status(201)
+          .json({ message: result.message, redirect: "/otp" });
+      }
+    } catch (error) {
+      console.error("Error in signUp:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 
-  if (!['user', 'vendor'].includes(role)) {
-    return res.status(400).json({ message: 'Role must be user or vendor.' });
+  async logIn(req, res) {
+    try {
+      const result = await authenticateForLogin(req.body);
+      if (result.success === false) {
+        return res.status(400).json({ message: result.message });
+      }
+      return res
+        .status(200)
+        .json({ message: result.message, redirect: "/home" });
+    } catch (error) {
+      console.log(error);
+      //   const errorData = new LogSchema({
+      //     type: "error",
+      //     message: error.message,
+      //     stack: error.stack,
+      //   });
+      //   await errorData.save();
+      return res.status(500).json({ message: "Internal server error" });
+    }
   }
 
-  const existingUser = await User.findOne({email: email});
+  async getAllProducts(req, res) {
+    try {
+      const result = await getAllProductsHandler();
 
-  // console.log('Existing User:', existingUser);
+      if (result.success === false) {
+        return res.status(404).json({ message: result.message });
+      }
 
-  if (existingUser) {
-    return res.status(409).json({ message: 'User already exists.' });
+      return res.status(200).json({ products: result.products });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 
+  async sellProduct(req, res) {
+    try {
+      const result = await sellProductHandler(req.body);
 
-  const newUser = {
-    name,
-    email,
-    password,
-    role
-  };
+      if (!result) {
+        res.status(400).json({ message: result.message });
+      }
 
-  User.create(newUser);
-  res.status(201).json({ message: 'User registered successfully.' });
-}
-
-// Login
-async login(req, res) {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required.' });
+      res.status(201).json({ message: result.message });
+    } catch (error) {
+      console.error("Error in addProduct:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 
-  const user = await User.findOne({email: email});
-  if (!user) {
-    return res.status(401).json({ message: 'Invalid credentials.' });
-  }
-  if (user.password !== password) {
-    return res.status(401).json({ message: 'Invalid credentials.' });
+  async productByCategory(req, res) {
+    try {
+      const category = req.query.category || req.params.category;
+      const skip = req.query.skip || req.params.skip; // pagination parameter to better scroll
+      const result = await productByCategoryHandler({ category, skip });
+      if (!result) {
+        return res.status(404).json({ message: "Resutl not found" });
+      }
+
+      // result found
+      return res.status(200).json({ data: result.products });
+    } catch (error) {
+      console.error("Error in addCategory:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 
-  return res.status(200).json({ message: 'Login successful' });
-}
+  async productById(req, res) {
+    const productId = req.params.productId || req.query.productId;
+    // const skip = req.query.skip || req.params.skip; // pagination parameter to better scroll
+    try {
+      // Check if the category already exists
+      const result = await getAllProductsByIdHandler(productId);
+      if (result.success === false) {
+        return res.status(404).json({ message: result.message });
+      }
+
+      // result found
+      return res.status(200).json({ data: result.products });
+    } catch (error) {
+      console.error("Error in addCategory:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  async signUpWithGoogle(req, res) {
+    try {
+      const result = createAccountWithGoogle(req.body, res);
+      if (result.success === false) {
+        return res.status(400).json({ message: result.message });
+      }
+      return res.status(201).json({ message: result.message, redirect: "/home" });
+    } catch (error) {
+      console.error("Error in signUpWithGoogle:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  async checkOut(req, res) {
+    try {
+      const result = createOrder(req.body);
+      if (result.success === false) {
+        return res.status(400).json({ message: result.message });
+      }
+      return res.status(201).json({ message: result.message, });
+      // return res.status(200).json({ message: "Checkout successful" });
+    } catch (error) {
+      console.error("Error in checkout:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
 }
 export default new Controller();
