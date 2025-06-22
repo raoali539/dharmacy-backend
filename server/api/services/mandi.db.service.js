@@ -1,6 +1,7 @@
-import User from "../../api/models/userSchema";
-const Order = require("../../api/models/Order");
 // import Otp from "../../api/models/otpSchema";
+import User from "../../api/models/userSchema";
+import Order from "../../api/models/orderSchema";
+import Category from "../../api/models/categorySchema";
 import Product from "../../api/models/productSchema";
 const nodemailer = require("nodemailer");
 
@@ -10,19 +11,20 @@ export {
   authenticateOTP,
   authenticateForLogin,
   resendOtpHandler,
-  sellProductHandler,
+  createProductHandler,
   productByCategoryHandler,
   getAllProductsHandler,
   getAllProductsByIdHandler,
   createAccountWithGoogle,
   createOrder,
-  //   createCategory,
-  //   createSubCategory,
-  //   createProduct,
-  //   deleteTheProduct,
-  //   updateTheProduct,
-  //   updateCategoryById,
-  //   deleteCategoryById,
+  createCategoryHandler,
+  updateCategoryById,
+  deleteCategoryById,
+  getAllCategoriesHandler,
+  deleteProductById,
+  updateProductById,
+  productByPriceRangeHandler,
+  productByCategoryAndPriceHandler,
 };
 
 
@@ -266,7 +268,6 @@ const resendOtpHandler = async (email) => {
   return { success: true, message: "OTP sent successfully" };
 };
 
-
 const authenticateOTP = async (props) => {
   const { otp } = props;
   const resetOTP = await Otp.findOne({ otp: otp });
@@ -313,7 +314,7 @@ const authenticateOTP = async (props) => {
 };
 
 // service function section
-const sellProductHandler = async (props) => {
+const createProductHandler = async (props) => {
   const { name, description, price, imageUrl, category, userId } =
     props;
   const product = new Product({
@@ -333,6 +334,7 @@ const sellProductHandler = async (props) => {
     return { success: true, message: "Add Posted Successfully" };
   }
 };
+
 const productByCategoryHandler = async ({ category, skip }) => {
   // following is the algorithm to get all products from all possible sources
   // steps 1 check in redis memory
@@ -364,7 +366,51 @@ const getAllProductsHandler = async () => {
   }
 };
 
+const updateProductById = async (id, body) => {
+  try {
+    const updated = await Product.findByIdAndUpdate(
+      id,
+      { ...body, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!updated) {
+      return { success: false, message: "Product not found" };
+    }
+
+    return {
+      success: true,
+      message: "Product updated successfully",
+      data: updated,
+    };
+  } catch (error) {
+    console.error("Update Product Error:", error);
+    return { success: false, message: "Failed to update product" };
+  }
+};
+
+const deleteProductById = async (id) => {
+  try {
+    const deleted = await Product.findByIdAndDelete(
+      id
+    );
+
+    if (!deleted) {
+      return { success: false, message: "Product not found" };
+    }
+
+    return {
+      success: true,
+      message: "Product deleted (soft delete) successfully",
+    };
+  } catch (error) {
+    console.error("Delete Product Error:", error);
+    return { success: false, message: "Failed to delete product" };
+  }
+};
+
 const getAllProductsByIdHandler = async (productId) => {
+  console.log("Product ID:", productId);
   const findProducts = await Product.findOne({ _id: productId });
 
   if (!findProducts) {
@@ -377,6 +423,32 @@ const getAllProductsByIdHandler = async (productId) => {
     success: true,
     products: findProducts,
   };
+};
+
+const productByPriceRangeHandler = async (minPrice, maxPrice) => {
+  try {
+    const products = await Product.find({
+      price: { $gte: minPrice, $lte: maxPrice }
+    });
+
+    return { success: true, data: products };
+  } catch (error) {
+    console.error("Get Products by Price Range Error:", error);
+    return { success: false, message: "Failed to fetch products by price range" };
+  }
+};
+const productByCategoryAndPriceHandler = async (category, minPrice, maxPrice) => {
+  try {
+    const products = await Product.find({
+      category,
+      price: { $gte: minPrice, $lte: maxPrice },
+    });
+
+    return { success: true, data: products };
+  } catch (error) {
+    console.error("Get Products by Category & Price Error:", error);
+    return { success: false, message: "Failed to fetch filtered products" };
+  }
 };
 
 const createAccountWithGoogle = async (props) => {
@@ -403,5 +475,66 @@ const createAccountWithGoogle = async (props) => {
       success: true,
       message: "User created successfully",
     };
+  }
+};
+
+//Category
+const createCategoryHandler = async (body, res) => {
+  try {
+    const { name, image } = body;
+
+    if (!name || !image) {
+      return { success: false, message: "Name and image are required" };
+    }
+
+    const category = new Category({ name, image });
+    await category.save();
+
+    return { success: true, message: "Category created successfully", data: category };
+  } catch (error) {
+    console.error("Create Category Error:", error);
+    return { success: false, message: "Failed to create category" };
+  }
+};
+
+const updateCategoryById = async (id, body) => {
+  try {
+    const { name, image } = body;
+
+    const updated = await Category.findByIdAndUpdate(
+      id,
+      { name, image },
+      { new: true }
+    );
+
+    if (!updated) return { success: false, message: "Category not found" };
+
+    return { success: true, message: "Category updated", data: updated };
+  } catch (error) {
+    console.error("Update Category Error:", error);
+    return { success: false, message: "Failed to update category" };
+  }
+};
+
+const deleteCategoryById = async (id) => {
+  try {
+    const deleted = await Category.findByIdAndDelete(id);
+
+    if (!deleted) return { success: false, message: "Category not found" };
+
+    return { success: true, message: "Category deleted" };
+  } catch (error) {
+    console.error("Delete Category Error:", error);
+    return { success: false, message: "Failed to delete category" };
+  }
+};
+
+const getAllCategoriesHandler = async () => {
+  try {
+    const categories = await Category.find().sort({ createdAt: -1 });
+    return { success: true, data: categories };
+  } catch (error) {
+    console.error("Get All Categories Error:", error);
+    return { success: false, message: "Failed to fetch categories" };
   }
 };

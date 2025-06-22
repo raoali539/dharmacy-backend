@@ -18,8 +18,9 @@ const productSchema = new mongoose.Schema(
     imageUrl: [{ type: String, required: false }],
     //example of category is Electronics
     category: {
-      type: String,
-      required: false,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
     },
 
     totalViews: {
@@ -27,6 +28,24 @@ const productSchema = new mongoose.Schema(
       default: 0,
     },
 
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    stockAvailable: {
+      type: Boolean,
+      default: true,
+    },
+
+    remark: {
+      type: String,
+    },
     createdAt: {
       type: Date,
       default: Date.now,
@@ -35,6 +54,7 @@ const productSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -43,22 +63,7 @@ const productSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    remark: {
-      type: String,
-    },
-    // accountStatus: {
-    //   type: String,
-    //   enum: ["Active", "Inactive"],
-    //   default: "Active",
-    // },
+
   },
   {
     timestamps: true,

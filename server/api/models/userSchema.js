@@ -1,39 +1,3 @@
-// const mongoose = require('mongoose');
-
-// const userSchema = new mongoose.Schema({
-//   name: {
-//     type: String,
-//     required: true,
-//     trim: true
-//   },
-//   email: {
-//     type: String,
-//     required: true,
-//     unique: true,
-//   },
-//   password: {
-//     type: String,
-//     required: true
-//   },
-//   role: {
-//     type: String,
-//     enum: ['user', 'vendor'],
-//     default: 'user'
-//   },
-//   createdAt: {
-//     type: Date,
-//     default: Date.now
-//   },
-//   updatedAt: {
-//     type: Date,
-//     default: Date.now
-//   }
-  
-// }, { timestamps: true });
-
-// module.exports = mongoose.model('User', userSchema);
-
-
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
@@ -133,10 +97,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
   },
   accountStatus: {
-    type: String,
-    enum: ["Active", "Inactive"],
-    default: "Active",
+    type: Boolean,
+    default: true,
   },
+  // accountStatus: {
+  //   type: String,
+  //   enum: ["Active", "Inactive"],
+  //   default: "Active",
+  // },
 });
 
 const User = mongoose.model("User", userSchema);

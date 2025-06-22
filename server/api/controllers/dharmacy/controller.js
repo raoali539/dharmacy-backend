@@ -3,12 +3,20 @@ import {
   authenticateOTP,
   authenticateForLogin,
   resendOtpHandler,
-  sellProductHandler,
+  createProductHandler,
   productByCategoryHandler,
   getAllProductsHandler,
   getAllProductsByIdHandler,
   createAccountWithGoogle,
   createOrder,
+  getAllCategoriesHandler,
+  createCategoryHandler,
+  updateCategoryById,
+  deleteCategoryById,
+  updateProductById,
+  deleteProductById,
+  productByPriceRangeHandler,
+  productByCategoryAndPriceHandler,
 } from "../../services";
 export class Controller {
 
@@ -70,9 +78,9 @@ export class Controller {
     }
   }
 
-  async sellProduct(req, res) {
+  async createProduct(req, res) {
     try {
-      const result = await sellProductHandler(req.body);
+      const result = await createProductHandler(req.body);
 
       if (!result) {
         res.status(400).json({ message: result.message });
@@ -82,6 +90,40 @@ export class Controller {
     } catch (error) {
       console.error("Error in addProduct:", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  async updateProduct(req, res) {
+    try {
+      const { id } = req.params;
+
+      const result = await updateProductById(id, req.body);
+
+      if (!result.success) {
+        return res.status(404).json({ message: result.message });
+      }
+
+      return res.status(200).json({ message: result.message, data: result.data });
+    } catch (error) {
+      console.error("Controller Error - updateProduct:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  async deleteProduct(req, res) {
+    try {
+      const { id } = req.params;
+
+      const result = await deleteProductById(id);
+
+      if (!result.success) {
+        return res.status(404).json({ message: result.message });
+      }
+
+      return res.status(200).json({ message: result.message });
+    } catch (error) {
+      console.error("Controller Error - deleteProduct:", error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
   }
 
@@ -102,8 +144,47 @@ export class Controller {
     }
   }
 
-  async productById(req, res) {
-    const productId = req.params.productId || req.query.productId;
+  async getProductsByPriceRange(req, res) {
+    try {
+      const { minPrice, maxPrice } = req.query;
+
+      const result = await productByPriceRangeHandler(Number(minPrice), Number(maxPrice));
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+
+      return res.status(200).json({ data: result.data });
+    } catch (error) {
+      console.error("Controller Error - getProductsByPriceRange:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  async getProductsByCategoryAndPrice(req, res) {
+    try {
+      const { category } = req.params;
+      const { minPrice, maxPrice } = req.query;
+
+      const result = await productByCategoryAndPriceHandler(
+        category,
+        Number(minPrice),
+        Number(maxPrice)
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+
+      return res.status(200).json({ data: result.data });
+    } catch (error) {
+      console.error("Controller Error - getProductsByCategoryAndPrice:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  async getProductbyid(req, res) {
+    const productId = req.query.productId;
     // const skip = req.query.skip || req.params.skip; // pagination parameter to better scroll
     try {
       // Check if the category already exists
@@ -146,5 +227,70 @@ export class Controller {
       res.status(500).json({ message: "Internal server error" });
     }
   }
+
+  async createCategory(req, res) {
+    try {
+      const result = await createCategoryHandler(req.body, res);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+
+      return res.status(201).json({ message: result.message, data: result.data });
+    } catch (error) {
+      console.error("Controller Error - createCategory:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  async updateCategory(req, res) {
+    try {
+      const { id } = req.params;
+
+      const result = await updateCategoryById(id, req.body);
+
+      if (!result.success) {
+        return res.status(404).json({ message: result.message });
+      }
+
+      return res.status(200).json({ message: result.message, data: result.data });
+    } catch (error) {
+      console.error("Controller Error - updateCategory:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  async deleteCategory(req, res) {
+    try {
+      const { id } = req.params;
+
+      const result = await deleteCategoryById(id);
+
+      if (!result.success) {
+        return res.status(404).json({ message: result.message });
+      }
+
+      return res.status(200).json({ message: result.message });
+    } catch (error) {
+      console.error("Controller Error - deleteCategory:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  async getAllCategories(req, res) {
+    try {
+      const result = await getAllCategoriesHandler();
+
+      if (!result.success) {
+        return res.status(500).json({ message: result.message });
+      }
+
+      return res.status(200).json({ data: result.data });
+    } catch (error) {
+      console.error("Controller Error - getAllCategories:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
 }
 export default new Controller();
