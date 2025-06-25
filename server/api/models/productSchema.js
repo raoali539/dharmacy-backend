@@ -27,6 +27,10 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    totalSale: {
+      type: Number,
+      default: 0,
+    },
 
     isDeleted: {
       type: Boolean,
@@ -39,8 +43,8 @@ const productSchema = new mongoose.Schema(
     },
 
     stockAvailable: {
-      type: Boolean,
-      default: true,
+      type: Number,
+      required: true,
     },
 
     remark: {

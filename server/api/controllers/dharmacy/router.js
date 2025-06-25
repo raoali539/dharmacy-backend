@@ -20,7 +20,7 @@ export default express
   // Product Routes
   
   .post('/v1/createProduct', controller.createProduct)
-  .get('/v1/getAllProducts', controller.getAllProducts)
+  .get('/v1/products', controller.products)
   .put("/v1/updateProduct/:id", controller.updateProduct)
   .delete("/v1/deleteProduct/:id", controller.deleteProduct)
   .get('/v1/getProductbyid', controller.getProductbyid)

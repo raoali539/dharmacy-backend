@@ -17,6 +17,8 @@ import {
   deleteProductById,
   productByPriceRangeHandler,
   productByCategoryAndPriceHandler,
+  getLowInStockHandler,
+  getHighInStock,
 } from "../../services";
 export class Controller {
 
@@ -64,19 +66,37 @@ export class Controller {
     }
   }
 
-  async getAllProducts(req, res) {
+  async products(req, res) {
     try {
-      const result = await getAllProductsHandler();
+      let result;
 
-      if (result.success === false) {
+      const type = req.query.type;
+
+      if (type === "1") {
+        result = await getAllProductsHandler();
+      } else if (type === "2") {
+        result = await getLowInStockHandler();
+      } else if (type === "3") {
+        result = await getHighInStock();
+      }
+      else if (type === "4") {
+        const category = req.query.category || req.params.category;
+        const skip = req.query.skip || req.params.skip || 0;
+        result = await productByCategoryHandler({ category, skip });
+      } else {
+        return res.status(400).json({ message: "Invalid query type" });
+      }
+
+      if (!result.success) {
         return res.status(404).json({ message: result.message });
       }
 
       return res.status(200).json({ products: result.products });
     } catch (error) {
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Internal server error", error: error.message });
     }
   }
+
 
   async createProduct(req, res) {
     try {

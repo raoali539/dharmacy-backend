@@ -25,6 +25,8 @@ export {
   updateProductById,
   productByPriceRangeHandler,
   productByCategoryAndPriceHandler,
+  getLowInStockHandler,
+  getHighInStock,
 };
 
 
@@ -339,7 +341,7 @@ const productByCategoryHandler = async ({ category, skip }) => {
   // following is the algorithm to get all products from all possible sources
   // steps 1 check in redis memory
   // step 2 check in mongodb
-  const findProducts = await Product.find({ category: category })
+  const findProducts = await Product.find({ category: category }).populate("category", "name image")
     //   .select("name description price")
     .skip(skip)
     .limit(10)
@@ -358,13 +360,40 @@ const productByCategoryHandler = async ({ category, skip }) => {
 };
 
 const getAllProductsHandler = async () => {
-  const products = await Product.find();
+  const products = await Product.find().populate("category", "name image");
   if (products.length === 0) {
     return { success: false, message: "No Products Found" };
   } else {
     return { success: true, products: products };
   }
 };
+const getLowInStockHandler = async () => {
+  try {
+    const products = await Product.find({ stockAvailable: { $lt: 5 } }).populate("category", "name image");
+
+    if (products.length === 0) {
+      return { success: false, message: "No low-stock products found" };
+    }
+
+    return { success: true, products };
+  } catch (error) {
+    return { success: false, message: "Error fetching products", error };
+  }
+};
+const getHighInStock = async () => {
+  try {
+    const products = await Product.find({ stockAvailable: { $gt: 5 } }).populate("category", "name image");
+
+    if (products.length === 0) {
+      return { success: false, message: "Stock Not Available more!" };
+    }
+
+    return { success: true, products };
+  } catch (error) {
+    return { success: false, message: "Error fetching products", error };
+  }
+};
+
 
 const updateProductById = async (id, body) => {
   try {
@@ -411,7 +440,7 @@ const deleteProductById = async (id) => {
 
 const getAllProductsByIdHandler = async (productId) => {
   console.log("Product ID:", productId);
-  const findProducts = await Product.findOne({ _id: productId });
+  const findProducts = await Product.findOne({ _id: productId }).populate("category", "name image");
 
   if (!findProducts) {
     return { success: false, message: "No Products Found" };
@@ -429,7 +458,7 @@ const productByPriceRangeHandler = async (minPrice, maxPrice) => {
   try {
     const products = await Product.find({
       price: { $gte: minPrice, $lte: maxPrice }
-    });
+    }).populate("category", "name image");
 
     return { success: true, data: products };
   } catch (error) {
@@ -442,7 +471,7 @@ const productByCategoryAndPriceHandler = async (category, minPrice, maxPrice) =>
     const products = await Product.find({
       category,
       price: { $gte: minPrice, $lte: maxPrice },
-    });
+    }).populate("category", "name image");
 
     return { success: true, data: products };
   } catch (error) {
