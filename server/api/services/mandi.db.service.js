@@ -1,8 +1,12 @@
 // import Otp from "../../api/models/otpSchema";
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 import User from "../../api/models/userSchema";
 import Order from "../../api/models/orderSchema";
 import Category from "../../api/models/categorySchema";
 import Product from "../../api/models/productSchema";
+
+
 const nodemailer = require("nodemailer");
 
 //export section
@@ -96,113 +100,161 @@ const authenticateForLogin = async (props) => {
 
   if ("email" in props && "password" in props) {
     const { email, password } = props;
-    const user = await User.findOne({ email, password });
-    if (user) {
-      return { success: true, message: "Login Successful" };
-    } else {
-      return {
-        success: false,
-        message: "Invalid Credentials",
-      };
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return { success: false, message: "User not found" };
     }
-    // // if (user && !user.isOtpVerified) {
-    // if (user && !user.isOtpVerified) {
-    //   return {
-    //     success: false,
-    //     message: "Please Verify OTP First",
-    //     redirect: "/otp",
-    //   };
-    // } else {
-    //   return {
-    //     success: false,
-    //     message: "Invalid Credentials",
-    //   };
-    // }
-  }
-};
 
-const createAccount = async (props, res) => {
-  const { userName, contactNumber, email, password } = props;
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return { success: false, message: "Invalid credentials" };
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
 
-
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
     return {
-      success: false,
-      message: "Email already exists try with different Email",
+      success: true,
+      message: "Login successful",
+      user: {
+        _id: user._id,
+        userName: user.userName,
+        email: user.email,
+        contactNumber: user.contactNumber,
+        profilePicture: user.profilePicture,
+        totalSales: user.totalSales,
+        accountStatus: user.accountStatus,
+        totalRating: user.totalRating,
+        address: user.address,
+        token,
+      },
     };
+
   }
-
-  // const generateOTP = () => {
-  //   const digits = "0123456789";
-  //   let otp = "";
-  //   for (let i = 0; i < 6; i++) {
-  //     otp += digits[Math.floor(Math.random() * 10)];
-  //   }
-  //   return otp;
-  // };
-
-  // Function to send otp to the merchants email
-
-  // const sendOTP = async (email, otp) => {
-  //   const transporter = nodemailer.createTransport({
-  //     service: "gmail",
-  //     auth: {
-  //       user: "raoali539@gmail.com",
-  //       pass: "fjtpebpsabumzfym",
-  //     },
-  //     port: 465,
-  //     secureConnection: false,
-  //     tls: {
-  //       rejectUnAuthorized: true,
-  //     },
-  //   });
-
-  //   const mailOptions = {
-  //     from: process.env.EMAIL_USERNAME,
-  //     to: email,
-  //     subject: "OTP for Password Reset",
-  //     html:
-  //       `Hi ${userName},\n\n` +
-  //       `Your OTP for resetting your Mawaish Mandi Account is: ${otp}\n\n` +
-  //       `If you did not request this,please ignore this email.\n`,
-  //   };
-
-  //   const info = await transporter.sendMail(mailOptions);
-
-  //   console.log(`Email sent: ${info.response}`);
-  // };
-
-  // const otp = generateOTP();
-  // const expiryTime = Date.now() + 600000; // 1 hour
-
-  // Save token and expiry time to the database
-
-  // const resetOTP = new Otp({
-  //   email: email,
-  //   contactNumber: contactNumber,
-  //   userName: userName,
-  //   otp: otp,
-  //   expiresAt: expiryTime,
-  // });
-
-  // await resetOTP.save();
-
-  // await sendOTP(email, otp);
-
-  const newUser = new User({
-    // otp,
-    userName,
-    contactNumber,
-    email,
-    password,
-  });
-
-  await newUser.save();
-
-  return { success: true, message: "Enter OTP" };
 };
+
+const createAccount = async (data) => {
+  try {
+    const { userName, email, contactNumber, password, address } = data;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return { success: false, message: "User already exists with this email" };
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      userName,
+      email,
+      contactNumber,
+      password: hashedPassword,
+      roles: ["user"], // default role
+      address,
+    });
+
+    await newUser.save();
+
+    return {
+      success: true,
+      message: "Account created successfully",
+    };
+  } catch (err) {
+    console.log(err);
+    return { success: false, message: "Something went wrong" };
+  }
+};
+
+
+// const createAccount = async (props, res) => {
+//   const { userName, contactNumber, email, password } = props;
+
+
+
+//   const existingUser = await User.findOne({ email });
+//   if (existingUser) {
+//     return {
+//       success: false,
+//       message: "Email already exists try with different Email",
+//     };
+//   }
+
+//   // const generateOTP = () => {
+//   //   const digits = "0123456789";
+//   //   let otp = "";
+//   //   for (let i = 0; i < 6; i++) {
+//   //     otp += digits[Math.floor(Math.random() * 10)];
+//   //   }
+//   //   return otp;
+//   // };
+
+//   // Function to send otp to the merchants email
+
+//   // const sendOTP = async (email, otp) => {
+//   //   const transporter = nodemailer.createTransport({
+//   //     service: "gmail",
+//   //     auth: {
+//   //       user: "raoali539@gmail.com",
+//   //       pass: "fjtpebpsabumzfym",
+//   //     },
+//   //     port: 465,
+//   //     secureConnection: false,
+//   //     tls: {
+//   //       rejectUnAuthorized: true,
+//   //     },
+//   //   });
+
+//   //   const mailOptions = {
+//   //     from: process.env.EMAIL_USERNAME,
+//   //     to: email,
+//   //     subject: "OTP for Password Reset",
+//   //     html:
+//   //       `Hi ${userName},\n\n` +
+//   //       `Your OTP for resetting your Mawaish Mandi Account is: ${otp}\n\n` +
+//   //       `If you did not request this,please ignore this email.\n`,
+//   //   };
+
+//   //   const info = await transporter.sendMail(mailOptions);
+
+//   //   console.log(`Email sent: ${info.response}`);
+//   // };
+
+//   // const otp = generateOTP();
+//   // const expiryTime = Date.now() + 600000; // 1 hour
+
+//   // Save token and expiry time to the database
+
+//   // const resetOTP = new Otp({
+//   //   email: email,
+//   //   contactNumber: contactNumber,
+//   //   userName: userName,
+//   //   otp: otp,
+//   //   expiresAt: expiryTime,
+//   // });
+
+//   // await resetOTP.save();
+
+//   // await sendOTP(email, otp);
+
+//   const newUser = new User({
+//     // otp,
+//     userName,
+//     contactNumber,
+//     email,
+//     password,
+//   });
+
+//   await newUser.save();
+
+//   return { success: true, message: "Enter OTP" };
+// };
 
 const resendOtpHandler = async (email) => {
   const existingOtp = await Otp.findOne({ email });

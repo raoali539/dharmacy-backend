@@ -1,3 +1,5 @@
+
+
 import {
   createAccount,
   authenticateOTP,
@@ -20,6 +22,7 @@ import {
   getLowInStockHandler,
   getHighInStock,
 } from "../../services";
+
 export class Controller {
 
   async register(req, res) {
@@ -37,7 +40,7 @@ export class Controller {
       } else {
         return res
           .status(201)
-          .json({ message: result.message, redirect: "/otp" });
+          .json({ message: result.message });
       }
     } catch (error) {
       console.error("Error in signUp:", error);
@@ -46,14 +49,26 @@ export class Controller {
   }
 
   async logIn(req, res) {
+    const loginType = req.query.loginType || req.params.loginType;
     try {
+
+      if (!loginType) {
+        return res.status(403).json({ message: "Please Select Role" });
+      }
+
       const result = await authenticateForLogin(req.body);
+
       if (result.success === false) {
         return res.status(400).json({ message: result.message });
       }
-      return res
-        .status(200)
-        .json({ message: result.message, redirect: "/home" });
+
+      const redirectPath = loginType === "1" ? "/userHome" : "/adminHome";
+
+      return res.status(200).json({
+        message: result.message,
+        redirect: redirectPath,
+        user: result.user,
+      });
     } catch (error) {
       console.log(error);
       //   const errorData = new LogSchema({

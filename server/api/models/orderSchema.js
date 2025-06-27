@@ -17,6 +17,11 @@ const orderSchema = new mongoose.Schema({
             name: String,               // snapshot of product name
             price: Number,              // snapshot of product price at time of order
             quantity: { type: Number, required: true },
+            vendorId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                required: true,
+            },
         },
     ],
 

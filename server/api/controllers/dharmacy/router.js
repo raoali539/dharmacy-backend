@@ -16,9 +16,9 @@ export default express
   .post("/v1/createCategory", controller.createCategory)
   .put("/v1/updateCategory/:id", controller.updateCategory)
   .delete("/v1/deleteCategory/:id", controller.deleteCategory)
-  
+
   // Product Routes
-  
+
   .post('/v1/createProduct', controller.createProduct)
   .get('/v1/products', controller.products)
   .put("/v1/updateProduct/:id", controller.updateProduct)
@@ -31,10 +31,10 @@ export default express
   .get('/v1/productbycategory', controller.productByCategory)
   .get("/v1/getProductsByPriceRange/filter/price-range", controller.getProductsByPriceRange)
   .get("/v1/getProductsByCategoryAndPrice/filter/:category", controller.getProductsByCategoryAndPrice)
-  
+
   // Checkout Routes
 
   .post('/v1/checkOut', controller.checkOut)
 
 
-  // Admin Apis
+// Admin Apis

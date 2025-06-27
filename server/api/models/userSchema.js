@@ -42,10 +42,10 @@ const userSchema = new mongoose.Schema({
     required: false,
     trim: true,
   },
-  otp : {
-    type : Number ,
+  otp: {
+    type: Number,
     required: false,
-    trim :true,
+    trim: true,
   },
   profilePicture: {
     url: { type: String, required: false, default: "" },
@@ -100,6 +100,11 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  // role: {
+  //   type: String,
+  //   enum: ["user", "vendor",],
+  //   default: "user",
+  // },
   // accountStatus: {
   //   type: String,
   //   enum: ["Active", "Inactive"],
