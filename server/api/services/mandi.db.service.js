@@ -368,8 +368,9 @@ const authenticateOTP = async (props) => {
 };
 
 // service function section
-const createProductHandler = async (props) => {
-  const { name, description, price, imageUrl, category, userId } =
+const createProductHandler = async ({ props, userId }) => {
+  console.log("userId", userId);
+  const { name, description, price, imageUrl, category , stockAvailable } =
     props;
   const product = new Product({
     name,
@@ -377,6 +378,7 @@ const createProductHandler = async (props) => {
     price,
     imageUrl,
     category,
+    stockAvailable,
     createdBy: userId,
     updatedBy: userId,
   });
@@ -393,7 +395,7 @@ const productByCategoryHandler = async ({ category, skip }) => {
   // following is the algorithm to get all products from all possible sources
   // steps 1 check in redis memory
   // step 2 check in mongodb
-  const findProducts = await Product.find({ category: category }).populate("category", "name image")
+  const findProducts = await Product.find({ category: category }).populate("category", "name image").populate("createdBy", "-password")
     //   .select("name description price")
     .skip(skip)
     .limit(10)
@@ -412,16 +414,17 @@ const productByCategoryHandler = async ({ category, skip }) => {
 };
 
 const getAllProductsHandler = async () => {
-  const products = await Product.find().populate("category", "name image");
+  const products = await Product.find().populate("category", "name image").populate("createdBy", "-password");
   if (products.length === 0) {
     return { success: false, message: "No Products Found" };
   } else {
     return { success: true, products: products };
   }
 };
+
 const getLowInStockHandler = async () => {
   try {
-    const products = await Product.find({ stockAvailable: { $lt: 5 } }).populate("category", "name image");
+    const products = await Product.find({ stockAvailable: { $lt: 5 } }).populate("category", "name image").populate("createdBy", "-password");
 
     if (products.length === 0) {
       return { success: false, message: "No low-stock products found" };
@@ -432,9 +435,10 @@ const getLowInStockHandler = async () => {
     return { success: false, message: "Error fetching products", error };
   }
 };
+
 const getHighInStock = async () => {
   try {
-    const products = await Product.find({ stockAvailable: { $gt: 5 } }).populate("category", "name image");
+    const products = await Product.find({ stockAvailable: { $gt: 5 } }).populate("category", "name image").populate("createdBy", "-password");
 
     if (products.length === 0) {
       return { success: false, message: "Stock Not Available more!" };
@@ -492,7 +496,7 @@ const deleteProductById = async (id) => {
 
 const getAllProductsByIdHandler = async (productId) => {
   console.log("Product ID:", productId);
-  const findProducts = await Product.findOne({ _id: productId }).populate("category", "name image");
+  const findProducts = await Product.findOne({ _id: productId }).populate("category", "name image").populate("createdBy", "-password");
 
   if (!findProducts) {
     return { success: false, message: "No Products Found" };
@@ -510,7 +514,7 @@ const productByPriceRangeHandler = async (minPrice, maxPrice) => {
   try {
     const products = await Product.find({
       price: { $gte: minPrice, $lte: maxPrice }
-    }).populate("category", "name image");
+    }).populate("category", "name image").populate("createdBy", "-password");
 
     return { success: true, data: products };
   } catch (error) {
@@ -523,7 +527,7 @@ const productByCategoryAndPriceHandler = async (category, minPrice, maxPrice) =>
     const products = await Product.find({
       category,
       price: { $gte: minPrice, $lte: maxPrice },
-    }).populate("category", "name image");
+    }).populate("category", "name image").populate("createdBy", "-password");
 
     return { success: true, data: products };
   } catch (error) {

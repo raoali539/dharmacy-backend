@@ -115,7 +115,8 @@ export class Controller {
 
   async createProduct(req, res) {
     try {
-      const result = await createProductHandler(req.body);
+     
+      const result = await createProductHandler({ props: req.body, userId: req.userId });
 
       if (!result) {
         res.status(400).json({ message: result.message });

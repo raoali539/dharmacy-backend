@@ -1,6 +1,6 @@
 import * as express from 'express';
 import controller from './controller';
-
+import authMiddleware from '../../middlewares/jwtAuthHandler';
 export default express
   .Router()
 
@@ -19,7 +19,7 @@ export default express
 
   // Product Routes
 
-  .post('/v1/createProduct', controller.createProduct)
+  .post('/v1/createProduct', authMiddleware , controller.createProduct)
   .get('/v1/products', controller.products)
   .put("/v1/updateProduct/:id", controller.updateProduct)
   .delete("/v1/deleteProduct/:id", controller.deleteProduct)

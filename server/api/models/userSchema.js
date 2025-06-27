@@ -76,16 +76,7 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  updatedBy: {
-    type: String,
-    required: true,
-    default: true,
-  },
-  createdBy: {
-    type: String,
-    required: true,
-    default: true,
-  },
+  
   isOtpVerified: {
     type: Boolean,
     default: false,
