@@ -31,12 +31,14 @@ export {
   productByCategoryAndPriceHandler,
   getLowInStockHandler,
   getHighInStock,
+  getProductsByUserHandler,
+  getOrdersByVendorHandler,
 };
 
 
 const createOrder = async (props) => {
 
-  const { userId, items, shippingAddress } = props;
+  const { userId, items, shippingAddress} = props;
 
   if (!userId || !items || items.length === 0 || !shippingAddress) {
     // return res.status(400).json({ message: "Missing required fields." });
@@ -369,8 +371,8 @@ const authenticateOTP = async (props) => {
 
 // service function section
 const createProductHandler = async ({ props, userId }) => {
-  console.log("userId", userId);
-  const { name, description, price, imageUrl, category , stockAvailable } =
+  // console.log("userId", userId);
+  const { name, description, price, imageUrl, category, stockAvailable } =
     props;
   const product = new Product({
     name,
@@ -623,3 +625,31 @@ const getAllCategoriesHandler = async () => {
     return { success: false, message: "Failed to fetch categories" };
   }
 };
+
+const getProductsByUserHandler = async (userId) => {
+  try {
+    const products = await Product.find({ createdBy: userId }).sort({ createdAt: -1 }).populate("category", "name image");
+    return { success: true, data: products };
+  } catch (error) {
+    console.error("Get My Products Error :", error);
+    return { success: false, message: "Failed to fetch Products" };
+  }
+};
+const getOrdersByVendorHandler = async (vendorId) => {
+  try {
+    const orders = await Order.find({
+      items: { $elemMatch: { vendorId } }
+    })
+      // .populate("userId", "name email") // Optional: populate user who placed the order
+      // .populate("items.productId", "name price") // Optional: populate product details
+      .sort({ createdAt: -1 });
+    return { success: true, data: orders };
+  } catch (error) {
+    console.error("Get My Products Error :", error);
+    return { success: false, message: "Failed to fetch Products" };
+  }
+};
+
+
+
+//admin functions

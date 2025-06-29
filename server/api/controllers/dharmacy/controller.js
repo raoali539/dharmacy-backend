@@ -1,4 +1,7 @@
-
+// import User from "../../api/models/userSchema";
+import Order from "../../models/orderSchema";
+// import Category from "../../api/models/categorySchema";
+import Product from "../../models/productSchema";
 
 import {
   createAccount,
@@ -21,6 +24,8 @@ import {
   productByCategoryAndPriceHandler,
   getLowInStockHandler,
   getHighInStock,
+  getProductsByUserHandler,
+  getOrdersByVendorHandler,
 } from "../../services";
 
 export class Controller {
@@ -250,20 +255,80 @@ export class Controller {
     }
   }
 
-  async checkOut(req, res) {
+  // async checkOut(req, res) {
+  //   try {
+  //     const result = createOrder(req.body);
+  //     if (result.success === false) {
+  //       return res.status(400).json({ message: result.message });
+  //     }
+  //     return res.status(201).json({ message: result.message, });
+  //     // return res.status(200).json({ message: "Checkout successful" });
+  //   } catch (error) {
+  //     console.error("Error in checkout:", error);
+  //     res.status(500).json({ message: "Internal server error" });
+  //   }
+  // }
+
+  
+  async createOrder(req, res) {
     try {
-      const result = createOrder(req.body);
-      if (result.success === false) {
-        return res.status(400).json({ message: result.message });
+      const { items, shippingAddress } = req.body;
+      const userId = req.userId;
+  
+      if (!items || !items.length) {
+        return res.status(400).json({ message: "Order must contain at least one item." });
       }
-      return res.status(201).json({ message: result.message, });
-      // return res.status(200).json({ message: "Checkout successful" });
+  
+      let totalAmount = 0;
+      const enrichedItems = [];
+  
+      for (const item of items) {
+        const product = await Product.findById(item.productId);
+        if (!product) {
+          return res.status(404).json({ message: `Product not found: ${item.productId}` });
+        }
+  
+        // Check stock
+        if (product.stockAvailable < item.quantity) {
+          return res.status(400).json({
+            message: `Insufficient stock for product: ${product.name}`,
+          });
+        }
+  
+        const itemTotal = product.price * item.quantity;
+        totalAmount += itemTotal;
+  
+        // Add item with snapshot and vendorId
+        enrichedItems.push({
+          productId: product._id,
+          name: product.name,
+          price: product.price,
+          quantity: item.quantity,
+          vendorId: product.createdBy,
+        });
+  
+        // Optional: reduce stock now
+        product.stockAvailable -= item.quantity;
+        product.totalSale += item.quantity;
+        await product.save();
+      }
+  
+      const order = new Order({
+        createdBy : userId,
+        items: enrichedItems,
+        shippingAddress,
+        totalAmount,
+      });
+  
+      const savedOrder = await order.save();
+  
+      res.status(201).json({ success: true, message: "Order created", order: savedOrder });
     } catch (error) {
-      console.error("Error in checkout:", error);
-      res.status(500).json({ message: "Internal server error" });
+      console.error("Error in createOrder:", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
     }
   }
-
+  
   async createCategory(req, res) {
     try {
       const result = await createCategoryHandler(req.body, res);
@@ -328,5 +393,33 @@ export class Controller {
     }
   }
 
+
+  // admin functions
+
+  async getMyProducts(req, res) {
+    try {
+      const userId = req.userId; // assuming authentication middleware sets this
+      const products = await getProductsByUserHandler(userId);
+  
+      res.status(200).json({ success: true, products });
+    } catch (error) {
+      console.error("Error in getMyProducts:", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+  
+  async getVendorOrders(req, res) {
+    try {
+      const vendorId = req.userId; // Set by auth middleware
+  
+      const orders = await getOrdersByVendorHandler(vendorId);
+  
+      res.status(200).json({ success: true, orders });
+    } catch (error) {
+      console.error("Error in getVendorOrders:", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  }
+  
 }
 export default new Controller();

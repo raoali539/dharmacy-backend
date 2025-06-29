@@ -19,7 +19,7 @@ export default express
 
   // Product Routes
 
-  .post('/v1/createProduct', authMiddleware , controller.createProduct)
+  .post('/v1/createProduct', authMiddleware, controller.createProduct)
   .get('/v1/products', controller.products)
   .put("/v1/updateProduct/:id", controller.updateProduct)
   .delete("/v1/deleteProduct/:id", controller.deleteProduct)
@@ -34,7 +34,9 @@ export default express
 
   // Checkout Routes
 
-  .post('/v1/checkOut', controller.checkOut)
+  .post('/v1/checkOut', authMiddleware , controller.createOrder)
 
 
-// Admin Apis
+  // Admin Apis
+  .get("/v1/myProducts", authMiddleware, controller.getMyProducts)
+  .get("/v1/myOrders", authMiddleware, controller.getVendorOrders);
